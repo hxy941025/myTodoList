@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Input, Button, Grid, Notify, Dialog } from "zent";
 import "zent/css/index.css";
-
+import "./style.css";
+import * as Api from "../api";
 const TodoList = () => {
   const [inputVal, setInputVal] = useState("");
   const [listData, setListData] = useState([]);
   const [selectedRowKeysList, setSelectedRowKeysList] = useState([]);
   const [editItem, setEditItem] = useState();
-
   const [isEditItemShow, setIsEditItemShow] = useState(false);
 
   const columns = [{ title: "全选", name: "todoItem" }];
+
+  // 获取列表
+  useEffect(() => {
+    Api.getList().then((res) => {
+      setListData(res);
+    });
+  }, []);
 
   const handleInputValChange = (e) => {
     setInputVal(e.target.value);
@@ -18,7 +25,7 @@ const TodoList = () => {
 
   const handleEditValChange = (e) => {
     const currentId = editItem.id;
-    setEditItem({ todoItem: e.target.value, id: currentId });
+    setEditItem({ todoItem: e.target.value, id: currentId, status: 0 });
   };
 
   const handleItemAdd = () => {
@@ -26,9 +33,13 @@ const TodoList = () => {
       Notify.error("请输入内容");
       return;
     }
-    listData.push({ id: listData.length, todoItem: inputVal });
-    setListData([...listData]);
-    setInputVal("");
+    Api.addItem({ id: listData.length, todoItem: inputVal, status: 0 }).then(
+      () => {
+        listData.push({ id: listData.length, todoItem: inputVal, status: 0 });
+        setListData([...listData]);
+        setInputVal("");
+      }
+    );
   };
 
   const handleItemListChange = () => {
@@ -36,27 +47,51 @@ const TodoList = () => {
   };
 
   const handleItemDel = () => {
-    const newListData = [...listData].filter((item) => {
-      return selectedRowKeysList.indexOf(item.id) === -1;
-    });
+    Api.delItem(selectedRowKeysList).then(() => {
+      const newListData = listData.filter((item) => {
+        return selectedRowKeysList.indexOf(item.id) === -1;
+      });
+      setSelectedRowKeysList([]);
 
-    for (let i = 0; i < newListData.length; i++) {
-      newListData[i].id = i;
-    }
-    setListData(newListData);
+      for (let i = 0; i < newListData.length; i++) {
+        newListData[i].id = i;
+      }
+      setListData(newListData);
+    });
+  };
+
+  const handleItemAccomplish = () => {
+    let newListData = listData;
+    Api.saveItem(selectedRowKeysList).then(() => {
+      selectedRowKeysList.map((item) => {
+        newListData[item].status = 1;
+      });
+      setListData(newListData);
+      setSelectedRowKeysList([]);
+    });
   };
 
   const handleItemEdit = () => {
-    const newListData = [...listData];
-    newListData[editItem.id] = { id: editItem.id, todoItem: editItem.todoItem };
-    setListData(newListData);
-    setIsEditItemShow(false);
+    const newListData = listData;
+    Api.editItem({
+      id: editItem.id,
+      todoItem: editItem.todoItem,
+      status: 0,
+    }).then(() => {
+      newListData[editItem.id] = {
+        id: editItem.id,
+        todoItem: editItem.todoItem,
+        status: 0,
+      };
+      setListData(newListData);
+      setIsEditItemShow(false);
+    });
   };
 
   const handleItemSearch = () => {
     const searchListData = [...listData].filter((item) => {
       if (inputVal === "") return item;
-      return item && item.todoItem == inputVal;
+      return item && item.todoItem === inputVal;
     });
     setListData(searchListData);
   };
@@ -68,8 +103,11 @@ const TodoList = () => {
         <Button type="primary" onClick={handleItemAdd} icon="plus">
           添加
         </Button>
-        <Button type="success" onClick={handleItemSearch} icon="search">
+        <Button onClick={handleItemSearch} icon="search">
           查询
+        </Button>
+        <Button type="success" onClick={handleItemAccomplish} icon="check">
+          完成
         </Button>
         <Button type="danger" onClick={handleItemDel} icon="close">
           删除
@@ -79,15 +117,19 @@ const TodoList = () => {
         columns={columns}
         datasets={listData}
         rowKey="id"
-        rowClassName={(data, index) => `${data.id}-${index}`}
+        rowClassName={(data) => {
+          return data.status === 1 ? "accomplish" : "todo";
+        }}
         onRowClick={(data, index, event) => {
+          console.log(data, index);
+          if (data.status === 1) return;
           setEditItem(data);
           setIsEditItemShow(true);
-          console.log(data, index);
         }}
         selection={{
+          selectedRowKeys: selectedRowKeysList,
           onSelect: (selectedRowKeys, selectedRows, currentRow) => {
-            console.log(selectedRowKeys, selectedRows, currentRow);
+            // console.log(selectedRowKeys, selectedRows, currentRow);
             setSelectedRowKeysList(selectedRowKeys);
           },
         }}

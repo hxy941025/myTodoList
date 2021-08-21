@@ -1,19 +1,24 @@
-const router = require('koa-router')()
+const router = require("koa-router")();
+const controller = require("../controller");
 
-router.get('/', async (ctx, next) => {
-  await ctx.render('index', {
-    title: 'Hello Koa 2!'
-  })
-})
+router.get("/list", async (ctx, next) => {
+  await controller.getList(ctx);
+});
 
-router.get('/string', async (ctx, next) => {
-  ctx.body = 'koa2 string'
-})
+router.post("/add", async (ctx, next) => {
+  await controller.addItem(ctx);
+});
 
-router.get('/json', async (ctx, next) => {
-  ctx.body = {
-    title: 'koa2 json'
-  }
-})
+router.post("/delete", async (ctx, next) => {
+  await controller.delItem(ctx);
+});
 
-module.exports = router
+router.post("/edit", async (ctx, next) => {
+  await controller.editItem(ctx);
+});
+
+router.post("/save", async (ctx, next) => {
+  await controller.saveItem(ctx);
+});
+
+module.exports = router;
