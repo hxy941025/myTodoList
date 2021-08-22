@@ -91,7 +91,7 @@ const TodoList = () => {
   const handleItemSearch = () => {
     const searchListData = [...listData].filter((item) => {
       if (inputVal === "") return item;
-      return item && item.todoItem === inputVal;
+      return item && item.todoItem.indexOf(inputVal) !== -1;
     });
     setListData(searchListData);
   };
