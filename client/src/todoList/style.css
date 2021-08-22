@@ -1,5 +1,6 @@
 .accomplish {
-  background-color: rgb(148, 214, 134) !important;
+  text-decoration: line-through;
+  color: rgb(209, 211, 212);
 }
 
 .todo {
